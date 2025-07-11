@@ -2,5 +2,5 @@
   "isAutomationActive": false,
   "inactivityMinutes": 20,
   "customMessage": "Esta conversa será finalizada por falta de interação. Caso queira retomar o atendimento, só enviar outra mensagem, ok?",
-  "veloonApiToken": "pn_T3pTCw1Pi58T7v16RUQ2HXd3HgOq8XcwnPA2lOdHk"
+  "veloonApiToken": "secret-token"
 }
