@@ -128,10 +128,13 @@ const checkInactiveSessions = async () => {
 
     // Decide qual estratégia usar com base na configuração
     if (config.portfolioFilter === 'carteirizados') {
-      await processCarteirizados(config, carteirizadosContactIds);
-    } else { // 'nao_carteirizados'
-      await processNaoCarteirizados(config, carteirizadosContactIds);
+      const carteirizados = await portfolioService.getCarteirizadosContactIds(config.veloonApiToken);
+      await processCarteirizados(config, carteirizados);
+    } else if (config.portfolioFilter === 'nao_carteirizados') {
+      const carteirizados = await portfolioService.getCarteirizadosContactIds(config.veloonApiToken);
+      await processNaoCarteirizados(config, carteirizados);
     }
+
 
   } catch (error) {
     console.error('[ERRO GERAL] Falha crítica na execução da automação:', error.message);
