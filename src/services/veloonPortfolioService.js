@@ -1,16 +1,34 @@
 const axios = require('axios');
 
-// Cache em memória para evitar chamadas excessivas à API
+// Utilitário de espera
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Função com retry e backoff exponencial
+async function fetchWithRetry(url, config, maxRetries = 5, delayMs = 1000) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const response = await axios.get(url, config);
+            return response;
+        } catch (err) {
+            if (err.response?.status === 429) {
+                const wait = delayMs * Math.pow(2, attempt); // 1s, 2s, 4s, 8s...
+                console.warn(`[RETRY ${attempt + 1}] 429 Too Many Requests. Aguardando ${wait}ms...`);
+                await sleep(wait);
+            } else {
+                throw err; // outros erros devem estourar normalmente
+            }
+        }
+    }
+    throw new Error('Falha após várias tentativas devido a erros 429.');
+}
+
+// Cache em memória
 const cache = {
     contactIds: new Set(),
     lastFetch: 0,
-    ttl: 3600 * 1000, // Tempo de vida do cache: 1 hora em milissegundos
+    ttl: 3600 * 1000, // 1 hora
 };
 
-/**
- * Busca todos os IDs de contatos que pertencem a alguma carteira.
- * Usa um cache para evitar sobrecarregar a API.
- */
 async function getCarteirizadosContactIds(apiToken) {
     const now = Date.now();
     if (now - cache.lastFetch < cache.ttl && cache.contactIds.size > 0) {
@@ -22,40 +40,45 @@ async function getCarteirizadosContactIds(apiToken) {
 
     try {
         const allContactIds = new Set();
-
-        // 1. Buscar todas as carteiras (portfolios)
         let portfolioPage = 1;
         let hasMorePortfolios = true;
         const portfolioIds = [];
 
-        while(hasMorePortfolios) {
-            const portfolioResponse = await axios.get('https://api.app.veloon.com.br/core/v1/portfolio', {
-                headers: { 'Authorization': apiToken },
-                params: { 'PageSize': 100, 'PageNumber': portfolioPage }
+        // 1. Buscar todas as carteiras (portfolios)
+        while (hasMorePortfolios) {
+            const response = await fetchWithRetry('https://api.app.veloon.com.br/core/v1/portfolio', {
+                headers: { Authorization: apiToken },
+                params: { PageSize: 100, PageNumber: portfolioPage }
             });
-            portfolioResponse.data.items.forEach(p => portfolioIds.push(p.id));
-            hasMorePortfolios = portfolioResponse.data.hasMorePages;
+            const data = response.data;
+            data.items.forEach(p => portfolioIds.push(p.id));
+            hasMorePortfolios = data.hasMorePages;
             portfolioPage++;
+            await sleep(300); // espera curta entre páginas
         }
 
         console.log(`[API] Encontradas ${portfolioIds.length} carteiras. Buscando contatos...`);
 
-        // 2. Para cada carteira, buscar os contatos associados
+        // 2. Buscar contatos por carteira
         for (const portfolioId of portfolioIds) {
             let contactPage = 1;
             let hasMoreContacts = true;
-            while(hasMoreContacts) {
-                const contactResponse = await axios.get(`https://api.app.veloon.com.br/core/v1/portfolio/${portfolioId}/contact`, {
-                    headers: { 'Authorization': apiToken },
-                    params: { 'PageSize': 100, 'PageNumber': contactPage }
-                });
-                contactResponse.data.items.forEach(c => allContactIds.add(c.contactId));
-                hasMoreContacts = contactResponse.data.hasMorePages;
+            while (hasMoreContacts) {
+                const response = await fetchWithRetry(
+                    `https://api.app.veloon.com.br/core/v1/portfolio/${portfolioId}/contact`,
+                    {
+                        headers: { Authorization: apiToken },
+                        params: { PageSize: 100, PageNumber: contactPage }
+                    }
+                );
+                const data = response.data;
+                data.items.forEach(c => allContactIds.add(c.contactId));
+                hasMoreContacts = data.hasMorePages;
                 contactPage++;
+                await sleep(300); // espera curta entre chamadas para evitar 429
             }
         }
 
-        // Atualiza o cache
         cache.contactIds = allContactIds;
         cache.lastFetch = now;
 
@@ -64,7 +87,6 @@ async function getCarteirizadosContactIds(apiToken) {
 
     } catch (error) {
         console.error('[ERRO] Falha ao buscar contatos carteirizados:', error.message);
-        // Em caso de erro, retorna o cache antigo se existir, para não parar a operação
         return cache.contactIds;
     }
 }
