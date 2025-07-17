@@ -1,6 +1,6 @@
 {
   "veloonApiToken": "pn_T3pTCw1Pi58T7v16RUQ2HXd3HgOq8XcwnPA2lOdHk",
-  "isAutomationActive": true,
+  "isAutomationActive": false,
   "inactivityMinutes": 86400,
   "customMessage": "Esta conversa será finalizada por falta de interação. Caso queira retomar o atendimento, só enviar outra mensagem.",
   "portfolioFilter": "nao_carteirizados"
