@@ -10,7 +10,9 @@ router.get('/', async (req, res) => {
   try {
     const fileContent = await fs.readFile(configPath, 'utf-8');
     const config = JSON.parse(fileContent);
-    res.json(config);
+    // Remove o token da resposta para não expô-lo no front-end
+    const { veloonApiToken, ...safeConfig } = config;
+    res.json(safeConfig);
   } catch (error) {
     console.error('Erro ao ler o arquivo de configuração:', error);
     res.status(500).json({ message: 'Erro interno ao buscar configurações.' });
@@ -20,18 +22,16 @@ router.get('/', async (req, res) => {
 // Rota PUT: Atualiza as configurações
 router.put('/', async (req, res) => {
   try {
-    // Lê o arquivo atual para não perder campos que não vêm do front (como o token)
+    // Lê o arquivo atual para manter o token, que não vem do front-end
     const currentFileContent = await fs.readFile(configPath, 'utf-8');
     const currentConfig = JSON.parse(currentFileContent);
 
-    // Atualiza o objeto de configuração com os novos dados do corpo da requisição
+    // Cria a nova configuração mesclando o token antigo com os novos dados
     const updatedConfig = {
-      ...currentConfig,
-      ...req.body
+      veloonApiToken: currentConfig.veloonApiToken, // Preserva o token
+      ...req.body // Adiciona os dados vindos do front-end
     };
 
-    // Escreve o objeto atualizado de volta no arquivo JSON
-    // O 'null, 2' formata o JSON para que ele fique legível
     await fs.writeFile(configPath, JSON.stringify(updatedConfig, null, 2), 'utf-8');
 
     res.json({ message: 'Configurações salvas com sucesso!' });
