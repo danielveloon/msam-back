@@ -145,7 +145,7 @@ const checkInactiveSessions = async () => {
 };
 
 const initializeScheduler = () => {
-  cron.schedule('*/5 * * * *', checkInactiveSessions);
+  cron.schedule('0 0 * * *', checkInactiveSessions);
   console.log('Agendador de tarefas iniciado com lógica otimizada.');
   checkInactiveSessions();
 };
