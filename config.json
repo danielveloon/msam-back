@@ -1,6 +1,6 @@
 {
   "veloonApiToken": "pn_T3pTCw1Pi58T7v16RUQ2HXd3HgOq8XcwnPA2lOdHk",
-  "isAutomationActive": true,
+  "isAutomationActive": false,
   "inactivityMinutes": 4320,
   "customMessage": "Olá! Como não tivemos retorno estamos finalizando esta conversa. Caso ainda precise de ajuda ou queira dar continuidade, é só voltar a nos chamar. Ficamos à disposição!\n\nM.SAM Distribuidora de Peças",
   "portfolioFilter": "nao_carteirizados"
