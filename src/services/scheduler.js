@@ -1,4 +1,3 @@
-const cron = require('node-cron');
 const axios = require('axios');
 const fs = require('fs/promises');
 const path = require('path');
@@ -10,12 +9,21 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function finalizeSession(session, apiToken, customMessage) {
     try {
         console.log(`[AÇÃO] Finalizando atendimento ${session.id} (Contato: ${session.contactId})`);
-        await axios.post(
-            `https://api.app.veloon.com.br/chat/v1/session/${session.id}/message`,
-            { text: customMessage },
-            { headers: { 'Authorization': apiToken } }
-        );
-        await sleep(500); // Pequena pausa entre enviar a mensagem e concluir
+        // Lógica para não enviar mensagem se a inatividade for > 24h
+        const lastInteraction = new Date(session.lastInteractionDate);
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        if (lastInteraction > twentyFourHoursAgo) {
+            await axios.post(
+                `https://api.app.veloon.com.br/chat/v1/session/${session.id}/message`,
+                { text: customMessage },
+                { headers: { 'Authorization': apiToken } }
+            );
+            await sleep(500);
+        } else {
+            console.log(`[INFO] Atendimento ${session.id} com mais de 24h. Não será enviada a mensagem de aviso.`);
+        }
+
         await axios.put(
             `https://api.app.veloon.com.br/chat/v1/session/${session.id}/complete`,
             { reactivateOnNewMessage: true, stopBotInExecution: true },
@@ -23,7 +31,7 @@ async function finalizeSession(session, apiToken, customMessage) {
         );
         console.log(`[SUCESSO] Atendimento ${session.id} finalizado.`);
     } catch (error) {
-        console.error(`[ERRO] Falha ao finalizar o atendimento ${session.id}:`, error.message);
+        console.error(`[ERRO] Falha ao finalizar o atendimento ${session.id}:`, error.response?.data?.message || error.message);
     }
 }
 
@@ -44,13 +52,13 @@ async function processCarteirizados(config, carteirizadosContactIds) {
             if (response.data.items && response.data.items.length > 0) {
                 for (const session of response.data.items) {
                     await finalizeSession(session, config.veloonApiToken, config.customMessage);
-                    await sleep(1000); // Pausa de 1 segundo entre a finalização de cada atendimento
+                    await sleep(1000);
                 }
             }
         } catch (error) {
             console.error(`[ERRO] Falha ao buscar sessões para o contato ${contactId}:`, error.message);
         }
-        await sleep(250); // Pausa de 250ms entre a verificação de cada contato
+        await sleep(250);
     }
 }
 
@@ -82,11 +90,11 @@ async function processNaoCarteirizados(config, carteirizadosContactIds) {
                     continue;
                 }
                 await finalizeSession(session, config.veloonApiToken, config.customMessage);
-                await sleep(1000); // Pausa de 1 segundo entre a finalização de cada atendimento
+                await sleep(1000);
             }
             hasMorePages = response.data.hasMorePages;
             pageNumber++;
-            await sleep(2000); // Pausa de 2 segundos entre as páginas
+            await sleep(2000);
         } catch (error) {
             console.error(`[ERRO] Falha ao buscar a página ${pageNumber} de atendimentos:`, error.message);
             break;
@@ -121,12 +129,5 @@ const checkInactiveSessions = async () => {
     }
 };
 
-//const initializeScheduler = () => {
-    // AGENDAMENTO MAIS SEGURO: A cada 15 minutos.
-    //cron.schedule('*/15 * * * *', checkInactiveSessions);
-    //console.log('Agendador de tarefas iniciado para rodar a cada 15 minutos.');
-    // Descomente a linha abaixo apenas para um teste imediato ao iniciar o servidor.
-    // checkInactiveSessions();
-//};
-
+// Apenas exporta a função principal
 module.exports = { checkInactiveSessions };

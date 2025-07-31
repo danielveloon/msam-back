@@ -1,22 +1,15 @@
-const fs = require('fs');
-const path = require('path');
+// Este script é chamado pelo Heroku Scheduler
 
-function getConfig() {
-    const configPath = path.resolve(__dirname, '../config.json');
-    const raw = fs.readFileSync(configPath, 'utf8');
-    return JSON.parse(raw);
-}
+const { checkInactiveSessions } = require('./services/scheduler');
 
-async function checkInactiveSessions() {
-    const config = getConfig();
+console.log('Iniciando tarefa agendada pelo Heroku Scheduler...');
 
-    if (!config.enabled) {
-        console.log('[INFO] Automação está desativada. Pulando execução.');
-        return;
-    }
-
-    // lógica da verificação aqui
-    console.log('[INFO] Executando rotina de verificação...');
-}
-
-module.exports = { checkInactiveSessions };
+checkInactiveSessions()
+  .then(() => {
+    console.log('Tarefa agendada concluída com sucesso.');
+    process.exit(0); // Informa ao Heroku que terminou bem
+  })
+  .catch(error => {
+    console.error('Erro durante a execução da tarefa agendada:', error);
+    process.exit(1); // Informa ao Heroku que deu erro
+  });

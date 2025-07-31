@@ -1,21 +1,18 @@
 const express = require('express');
 const cors = require('cors');
 const settingsRoutes = require('./routes/settingsRoutes');
-const { checkInactiveSessions } = require('./services/scheduler');
 
 const app = express();
-const PORT = process.env.PORT || 3001; // Porta do backend
+const PORT = process.env.PORT || 3001;
 
 // Middlewares
-app.use(cors()); // Permite que o front (em outra porta) acesse a API
-app.use(express.json()); // Habilita o parsing de JSON no corpo das requisições
+app.use(cors());
+app.use(express.json());
 
-// Rotas da API
+// Rota da API para o front-end
 app.use('/api/v1/settings', settingsRoutes);
 
 // Inicia o servidor
 app.listen(PORT, () => {
-  console.log(`Servidor backend rodando na porta ${PORT}`);
-  // Inicia o agendador de tarefas quando o servidor sobe
-  checkInactiveSessions();
+  console.log(`Servidor da API rodando na porta ${PORT}`);
 });
