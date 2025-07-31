@@ -1,15 +1,22 @@
-// Arquivo: src/run-check.js
+const fs = require('fs');
+const path = require('path');
 
-// Importa apenas o necessário para a tarefa
-const { checkInactiveSessions } = require('./services/scheduler');
+function getConfig() {
+    const configPath = path.resolve(__dirname, '../config.json');
+    const raw = fs.readFileSync(configPath, 'utf8');
+    return JSON.parse(raw);
+}
 
-console.log('Iniciando execução manual via Heroku Scheduler...');
+async function checkInactiveSessions() {
+    const config = getConfig();
 
-// Chama a função e finaliza o processo quando terminar
-checkInactiveSessions().then(() => {
-    console.log('Execução do Heroku Scheduler concluída.');
-    process.exit(0); // Sai com sucesso
-}).catch(error => {
-    console.error('Erro na execução do Heroku Scheduler:', error);
-    process.exit(1); // Sai com erro
-});
+    if (!config.enabled) {
+        console.log('[INFO] Automação está desativada. Pulando execução.');
+        return;
+    }
+
+    // lógica da verificação aqui
+    console.log('[INFO] Executando rotina de verificação...');
+}
+
+module.exports = { checkInactiveSessions };
