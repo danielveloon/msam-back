@@ -121,12 +121,12 @@ const checkInactiveSessions = async () => {
     }
 };
 
-const initializeScheduler = () => {
+//const initializeScheduler = () => {
     // AGENDAMENTO MAIS SEGURO: A cada 15 minutos.
-    cron.schedule('*/15 * * * *', checkInactiveSessions);
-    console.log('Agendador de tarefas iniciado para rodar a cada 15 minutos.');
+    //cron.schedule('*/15 * * * *', checkInactiveSessions);
+    //console.log('Agendador de tarefas iniciado para rodar a cada 15 minutos.');
     // Descomente a linha abaixo apenas para um teste imediato ao iniciar o servidor.
     // checkInactiveSessions();
-};
+//};
 
-module.exports = { initializeScheduler };
+module.exports = { checkInactiveSessions };
