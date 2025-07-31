@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const settingsRoutes = require('./routes/settingsRoutes');
-const { initializeScheduler } = require('./services/scheduler');
+const { checkInactiveSessions } = require('./services/scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3001; // Porta do backend
@@ -17,5 +17,5 @@ app.use('/api/v1/settings', settingsRoutes);
 app.listen(PORT, () => {
   console.log(`Servidor backend rodando na porta ${PORT}`);
   // Inicia o agendador de tarefas quando o servidor sobe
-  initializeScheduler();
+  checkInactiveSessions();
 });
