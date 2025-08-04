@@ -1,14 +1,17 @@
 const axios = require('axios');
 const portfolioService = require('./veloonPortfolioService');
-const db = require('./db'); // Importa nosso módulo de DB
+const db = require('./db'); // Importa o nosso módulo de banco de dados
 
-const configPath = path.join(__dirname, '..', '..', 'config.json');
+// Utilitário de espera
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// ----- INÍCIO DAS FUNÇÕES AUXILIARES (finalizeSession, etc.) -----
+// (Copie as funções processCarteirizados, processNaoCarteirizados e finalizeSession aqui,
+// pois elas não precisam de alteração)
 
 async function finalizeSession(session, apiToken, customMessage) {
     try {
         console.log(`[AÇÃO] Finalizando atendimento ${session.id} (Contato: ${session.contactId})`);
-        // Lógica para não enviar mensagem se a inatividade for > 24h
         const lastInteraction = new Date(session.lastInteractionDate);
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -101,11 +104,15 @@ async function processNaoCarteirizados(config, carteirizadosContactIds) {
     }
 }
 
+// ----- FIM DAS FUNÇÕES AUXILIARES -----
+
+
+// Função principal que será chamada pelo Heroku Scheduler
 const checkInactiveSessions = async () => {
     console.log('----------------------------------------------------');
     console.log(`[${new Date().toLocaleString('pt-BR')}] Iniciando verificação...`);
     try {
-        // A MUDANÇA ESTÁ AQUI: Busca as configurações do DB, não do arquivo.
+        // VERSÃO CORRETA: Busca as configurações do banco de dados
         const config = await db.getSettings();
 
         if (!config.isAutomationActive) {
@@ -128,4 +135,5 @@ const checkInactiveSessions = async () => {
     }
 };
 
+// Apenas exporta a função principal. Nenhuma chamada ao cron.schedule aqui.
 module.exports = { checkInactiveSessions };
