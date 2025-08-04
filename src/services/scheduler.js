@@ -1,7 +1,6 @@
 const axios = require('axios');
-const fs = require('fs/promises');
-const path = require('path');
 const portfolioService = require('./veloonPortfolioService');
+const db = require('./db'); // Importa nosso módulo de DB
 
 const configPath = path.join(__dirname, '..', '..', 'config.json');
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -106,8 +105,8 @@ const checkInactiveSessions = async () => {
     console.log('----------------------------------------------------');
     console.log(`[${new Date().toLocaleString('pt-BR')}] Iniciando verificação...`);
     try {
-        const fileContent = await fs.readFile(configPath, 'utf-8');
-        const config = JSON.parse(fileContent);
+        // A MUDANÇA ESTÁ AQUI: Busca as configurações do DB, não do arquivo.
+        const config = await db.getSettings();
 
         if (!config.isAutomationActive) {
             console.log('[INFO] Automação está desativada. Pulando execução.');
@@ -122,12 +121,11 @@ const checkInactiveSessions = async () => {
             await processNaoCarteirizados(config, carteirizadosContactIds);
         }
     } catch (error) {
-        console.error('[ERRO GERAL] Falha crítica na execução da automação:', error.message);
+        console.error('[ERRO GERAL] Falha crítica na execução da automação:', error);
     } finally {
         console.log(`[${new Date().toLocaleString('pt-BR')}] Verificação concluída.`);
         console.log('----------------------------------------------------');
     }
 };
 
-// Apenas exporta a função principal
 module.exports = { checkInactiveSessions };
